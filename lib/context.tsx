@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { UserProfile, Announcement, Complaint, GuestVisit, ChatRoom, Neighbor } from './types';
 import * as Storage from './storage';
+import { authService } from './services/auth.service';
 
 interface AppContextValue {
   profile: UserProfile | null;
@@ -16,6 +17,7 @@ interface AppContextValue {
   refreshGuests: () => Promise<void>;
   refreshChatRooms: () => Promise<void>;
   refreshAll: () => Promise<void>;
+  logout: () => Promise<void>;
   unreadAnnouncementCount: number;
   totalUnreadChats: number;
 }
@@ -75,6 +77,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })();
   }, [refreshAll]);
 
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Always clear local data even if API call fails
+      await Storage.clearAllData();
+      setProfile(null);
+      setAnnouncements([]);
+      setComplaints([]);
+      setGuests([]);
+      setChatRooms([]);
+      setNeighbors([]);
+    }
+  }, []);
+
   const unreadAnnouncementCount = useMemo(() => announcements.filter(a => !a.isRead).length, [announcements]);
   const totalUnreadChats = useMemo(() => chatRooms.reduce((acc, r) => acc + r.unreadCount, 0), [chatRooms]);
 
@@ -92,9 +111,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     refreshGuests,
     refreshChatRooms,
     refreshAll,
+    logout,
     unreadAnnouncementCount,
     totalUnreadChats,
-  }), [profile, announcements, complaints, guests, chatRooms, neighbors, isLoading, refreshProfile, refreshAnnouncements, refreshComplaints, refreshGuests, refreshChatRooms, refreshAll, unreadAnnouncementCount, totalUnreadChats]);
+  }), [profile, announcements, complaints, guests, chatRooms, neighbors, isLoading, refreshProfile, refreshAnnouncements, refreshComplaints, refreshGuests, refreshChatRooms, refreshAll, logout, unreadAnnouncementCount, totalUnreadChats]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

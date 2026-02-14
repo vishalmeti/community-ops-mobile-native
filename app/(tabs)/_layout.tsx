@@ -1,8 +1,8 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, useColorScheme, View, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
@@ -14,19 +14,19 @@ function NativeTabLayout() {
 
   return (
     <NativeTabs>
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="home">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="community">
         <Icon sf={{ default: "megaphone", selected: "megaphone.fill" }} />
         <Label>Community</Label>
-        {unreadAnnouncementCount > 0 && <Badge>{unreadAnnouncementCount}</Badge>}
+        {unreadAnnouncementCount > 0 && <Badge>{String(unreadAnnouncementCount)}</Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="chat">
         <Icon sf={{ default: "message", selected: "message.fill" }} />
         <Label>Chat</Label>
-        {totalUnreadChats > 0 && <Badge>{totalUnreadChats}</Badge>}
+        {totalUnreadChats > 0 && <Badge>{String(totalUnreadChats)}</Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="guests">
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
@@ -72,7 +72,7 @@ function ClassicTabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
@@ -123,6 +123,20 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
+  const { profile, isLoading } = useApp();
+  
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return <Redirect href="/auth/login" />;
+  }
+
   if (isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }

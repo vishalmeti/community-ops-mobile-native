@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, Platform, TextInput, Alert } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useApp } from '@/lib/context';
@@ -13,7 +14,7 @@ function getInitials(name: string) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, refreshProfile } = useApp();
+  const { profile, refreshProfile, logout } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -39,7 +40,7 @@ export default function ProfileScreen() {
     setIsEditing(false);
   };
 
-  const memberSince = new Date(profile.moveInDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const memberSince = new Date(profile.created_at || profile.moveInDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <View style={styles.container}>
@@ -191,6 +192,41 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.versionText}>Haven v1.0.0</Text>
+            
+            <View style={{ paddingBottom: 40 }}>
+              <Pressable 
+                style={({ pressed }) => [styles.logoutButton, pressed && styles.pressed]} 
+                onPress={() => {
+                  Alert.alert(
+                    "Sign Out",
+                    "Are you sure you want to sign out?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { 
+                        text: "Sign Out", 
+                        style: "destructive", 
+                        onPress: async () => {
+                          try {
+                            await logout();
+                            if (Platform.OS === 'web') {
+                              window.location.reload();
+                            } else {
+                              router.replace('/auth/login');
+                            }
+                          } catch (error) {
+                            console.error('Logout failed:', error);
+                            router.replace('/auth/login');
+                          }
+                        } 
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Feather name="log-out" size={18} color={Colors.surface} />
+                <Text style={styles.logoutText}>Sign Out</Text>
+              </Pressable>
+            </View>
           </>
         )}
       </ScrollView>
@@ -223,4 +259,6 @@ const styles = StyleSheet.create({
   settingText: { fontFamily: 'DMSans_500Medium', fontSize: 15, color: Colors.text, flex: 1 },
   pressed: { opacity: 0.7 },
   versionText: { fontFamily: 'DMSans_400Regular', fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: 8, marginBottom: 20 },
+  logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.error, borderRadius: 14, paddingVertical: 14, gap: 8, marginHorizontal: 20 },
+  logoutText: { fontFamily: 'DMSans_600SemiBold', fontSize: 15, color: Colors.surface },
 });

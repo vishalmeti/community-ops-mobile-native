@@ -8,6 +8,7 @@ export interface UserProfile {
   floor: string;
   moveInDate: string;
   isSetup: boolean;
+  created_at?: string; // Backend field
 }
 
 export interface Announcement {

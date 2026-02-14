@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, Announcement, Complaint, GuestVisit, ChatRoom, Message, Neighbor } from './types';
-import { defaultProfile, seedAnnouncements, seedComplaints, seedGuestVisits, seedChatRooms, seedMessages, seedNeighbors } from './seed-data';
 
 const KEYS = {
   PROFILE: '@haven_profile',
@@ -23,37 +22,28 @@ async function setItem<T>(key: string, value: T): Promise<void> {
 }
 
 export async function initializeData(): Promise<void> {
-  const initialized = await AsyncStorage.getItem(KEYS.INITIALIZED);
-  if (initialized) return;
-
-  await Promise.all([
-    setItem(KEYS.PROFILE, defaultProfile),
-    setItem(KEYS.ANNOUNCEMENTS, seedAnnouncements),
-    setItem(KEYS.COMPLAINTS, seedComplaints),
-    setItem(KEYS.GUESTS, seedGuestVisits),
-    setItem(KEYS.CHAT_ROOMS, seedChatRooms),
-    setItem(KEYS.MESSAGES, seedMessages),
-    setItem(KEYS.NEIGHBORS, seedNeighbors),
-  ]);
-
-  await AsyncStorage.setItem(KEYS.INITIALIZED, 'true');
+  // No longer seeding dummy data
 }
 
-export async function getProfile(): Promise<UserProfile> {
-  const profile = await getItem<UserProfile>(KEYS.PROFILE);
-  return profile || defaultProfile;
+export async function getProfile(): Promise<UserProfile | null> {
+  return await getItem<UserProfile>(KEYS.PROFILE);
 }
 
 export async function updateProfile(profile: Partial<UserProfile>): Promise<UserProfile> {
   const current = await getProfile();
+  if (!current) throw new Error("No profile to update");
   const updated = { ...current, ...profile };
   await setItem(KEYS.PROFILE, updated);
   return updated;
 }
 
+export async function setProfile(profile: UserProfile): Promise<void> {
+  await setItem(KEYS.PROFILE, profile);
+}
+
 export async function getAnnouncements(): Promise<Announcement[]> {
   const items = await getItem<Announcement[]>(KEYS.ANNOUNCEMENTS);
-  return items || seedAnnouncements;
+  return items || [];
 }
 
 export async function markAnnouncementRead(id: string): Promise<void> {
@@ -64,7 +54,7 @@ export async function markAnnouncementRead(id: string): Promise<void> {
 
 export async function getComplaints(): Promise<Complaint[]> {
   const items = await getItem<Complaint[]>(KEYS.COMPLAINTS);
-  return items || seedComplaints;
+  return items || [];
 }
 
 export async function addComplaint(complaint: Complaint): Promise<void> {
@@ -75,7 +65,7 @@ export async function addComplaint(complaint: Complaint): Promise<void> {
 
 export async function getGuestVisits(): Promise<GuestVisit[]> {
   const items = await getItem<GuestVisit[]>(KEYS.GUESTS);
-  return items || seedGuestVisits;
+  return items || [];
 }
 
 export async function addGuestVisit(guest: GuestVisit): Promise<void> {
@@ -102,17 +92,17 @@ export async function updateGuestStatus(id: string, status: GuestVisit['status']
 
 export async function getChatRooms(): Promise<ChatRoom[]> {
   const items = await getItem<ChatRoom[]>(KEYS.CHAT_ROOMS);
-  return items || seedChatRooms;
+  return items || [];
 }
 
 export async function getMessages(roomId: string): Promise<Message[]> {
   const allMessages = await getItem<Record<string, Message[]>>(KEYS.MESSAGES);
-  const msgs = allMessages || seedMessages;
+  const msgs = allMessages || {};
   return msgs[roomId] || [];
 }
 
 export async function sendMessage(roomId: string, text: string, senderName: string): Promise<Message> {
-  const allMessages = await getItem<Record<string, Message[]>>(KEYS.MESSAGES) || seedMessages;
+  const allMessages = await getItem<Record<string, Message[]>>(KEYS.MESSAGES) || {};
   const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
   const message: Message = {
     id,
@@ -136,7 +126,7 @@ export async function sendMessage(roomId: string, text: string, senderName: stri
 
 export async function getNeighbors(): Promise<Neighbor[]> {
   const items = await getItem<Neighbor[]>(KEYS.NEIGHBORS);
-  return items || seedNeighbors;
+  return items || [];
 }
 
 export async function createChatRoom(room: ChatRoom): Promise<void> {
